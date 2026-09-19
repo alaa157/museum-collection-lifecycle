@@ -230,6 +230,9 @@ an empty database before that phase would produce a misleading result.
 
 ## Phase 4 — Configuration, secrets, migrations, and seed data
 
+Status: implementation complete; fresh-database integration run is blocked in
+this Docker environment by cross-container PostgreSQL connectivity
+
 ### Files to change
 
 - `.env.example`
@@ -265,6 +268,24 @@ an empty database before that phase would produce a misleading result.
 
 - Configuration is explicit, validated, and environment-specific.
 - There is a documented, repeatable first-install and upgrade procedure.
+
+### Phase 4 validation record
+
+- Added a dedicated migration image containing all six Alembic environments
+  and the two idempotent seed routines.
+- Added a one-shot Compose `migrations` service that runs after PostgreSQL and
+  RabbitMQ healthchecks and before application services.
+- Corrected initialization order so auth migrations run before auth seeding.
+- Added deployment environment validation that rejects missing values,
+  example credentials, and short JWT secrets.
+- Added `AUTH_COOKIE_SECURE` to the deployment configuration contract.
+- Quoted the frontend application name in `.env.example` so shell-based
+  environment loading does not split it into commands.
+- The migration image builds successfully and Compose configuration validates.
+- Static script validation passes. The fresh-database migration/seed command
+  was attempted, but the migration container could resolve `postgres` and
+  could not establish a TCP connection to it in this Docker environment.
+  This must be rerun on the target VM before Phase 4 is accepted.
 
 ## Phase 5 — Public edge, TLS, and persistent storage
 

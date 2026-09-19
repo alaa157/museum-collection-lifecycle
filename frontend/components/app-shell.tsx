@@ -34,9 +34,6 @@ const navigation = [
   // ...
 ];
 
-const user = useCurrentUser();
-const items = navigation.filter((item) => !item.permission || can(user, item.permission));
-
 export function AppShell({
   children
 }: {
@@ -44,6 +41,7 @@ export function AppShell({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  const user = useCurrentUser();
 
   async function logout() {
     await api.logout();

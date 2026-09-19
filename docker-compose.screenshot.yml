@@ -1,0 +1,110 @@
+# Local-only override for trying the application in this hosted environment.
+# It preserves the production bridge-network Compose file and uses host
+# networking because this environment blocks container-to-container TCP.
+services:
+  postgres:
+    network_mode: host
+    networks: !reset []
+    command: ["postgres", "-p", "55432"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -h 127.0.0.1 -p 55432 -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+
+  redis:
+    network_mode: host
+    networks: !reset []
+    command: ["redis-server", "--appendonly", "yes", "--port", "56379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "-p", "56379", "ping"]
+
+  rabbitmq:
+    network_mode: host
+    networks: !reset []
+    environment:
+      RABBITMQ_NODE_PORT: 5678
+
+  migrations:
+    network_mode: host
+    networks: !reset []
+    environment:
+      DATABASE_HOST: 127.0.0.1
+      DATABASE_PORT: 55432
+      RABBITMQ_HOST: 127.0.0.1
+      RABBITMQ_PORT: 5678
+
+  auth-service:
+    network_mode: host
+    networks: !reset []
+    environment:
+      DATABASE_HOST: 127.0.0.1
+      DATABASE_PORT: 55432
+
+  collection-service:
+    network_mode: host
+    networks: !reset []
+    environment:
+      DATABASE_HOST: 127.0.0.1
+      DATABASE_PORT: 55432
+      REDIS_HOST: 127.0.0.1
+      REDIS_PORT: 56379
+      RABBITMQ_HOST: 127.0.0.1
+      RABBITMQ_PORT: 5678
+
+  conservation-service:
+    network_mode: host
+    networks: !reset []
+    environment:
+      DATABASE_HOST: 127.0.0.1
+      DATABASE_PORT: 55432
+      RABBITMQ_HOST: 127.0.0.1
+      RABBITMQ_PORT: 5678
+      COLLECTION_SERVICE_URL: http://127.0.0.1:8002
+
+  loan-service:
+    network_mode: host
+    networks: !reset []
+    environment:
+      DATABASE_HOST: 127.0.0.1
+      DATABASE_PORT: 55432
+      RABBITMQ_HOST: 127.0.0.1
+      RABBITMQ_PORT: 5678
+      COLLECTION_SERVICE_URL: http://127.0.0.1:8002
+
+  notification-service:
+    network_mode: host
+    networks: !reset []
+    environment:
+      DATABASE_HOST: 127.0.0.1
+      DATABASE_PORT: 55432
+      RABBITMQ_HOST: 127.0.0.1
+      RABBITMQ_PORT: 5678
+
+  audit-service:
+    network_mode: host
+    networks: !reset []
+    environment:
+      DATABASE_HOST: 127.0.0.1
+      DATABASE_PORT: 55432
+      RABBITMQ_HOST: 127.0.0.1
+      RABBITMQ_PORT: 5678
+
+  api-gateway:
+    network_mode: host
+    networks: !reset []
+    environment:
+      AUTH_SERVICE_URL: http://127.0.0.1:8001
+      COLLECTION_SERVICE_URL: http://127.0.0.1:8002
+      CONSERVATION_SERVICE_URL: http://127.0.0.1:8003
+      LOAN_SERVICE_URL: http://127.0.0.1:8004
+      NOTIFICATION_SERVICE_URL: http://127.0.0.1:8005
+      AUDIT_SERVICE_URL: http://127.0.0.1:8006
+    ports: !reset []
+
+  frontend:
+    network_mode: host
+    networks: !reset []
+    build:
+      args:
+        API_GATEWAY_URL: http://127.0.0.1:8000
+    environment:
+      API_GATEWAY_URL: http://127.0.0.1:8000
+    ports: !reset []

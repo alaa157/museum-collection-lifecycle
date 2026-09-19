@@ -3,7 +3,10 @@ from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 SERVICE_DIR = Path(__file__).resolve().parents[2]
-ROOT_DIR = Path(__file__).resolve().parents[4]
+ROOT_DIR = next(
+    (parent for parent in Path(__file__).resolve().parents if (parent / ".env").exists()),
+    Path("/app"),
+)
 
 
 class Settings(BaseSettings):
@@ -26,7 +29,7 @@ class Settings(BaseSettings):
 
     cors_allowed_origins: str = "http://127.0.0.1:3000,http://localhost:3000"
 
-    seed_admin_email: str = "admin@museum.local"
+    seed_admin_email: str = "admin@museum.org"
     seed_admin_password: str = "ChangeThisPassword123!"
     seed_admin_first_name: str = "System"
     seed_admin_last_name: str = "Administrator"

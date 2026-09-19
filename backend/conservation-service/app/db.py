@@ -5,7 +5,10 @@ from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 SERVICE_DIR = Path(__file__).resolve().parents[1]
-ROOT_DIR = Path(__file__).resolve().parents[3]
+ROOT_DIR = next(
+    (parent for parent in Path(__file__).resolve().parents if (parent / ".env").exists()),
+    Path("/app"),
+)
 
 class Settings(BaseSettings):
     database_host: str = "127.0.0.1"

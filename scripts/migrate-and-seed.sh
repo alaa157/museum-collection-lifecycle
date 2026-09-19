@@ -35,15 +35,35 @@ run_migration() {
   alembic upgrade head
 }
 
+prepare_collection_revision_table() {
+  cd "$ROOT/collection-service"
+  python - <<'PY'
+from app.core.config import get_settings
+from sqlalchemy import create_engine, text
+
+engine = create_engine(get_settings().database_url)
+with engine.begin() as connection:
+    connection.execute(
+        text(
+            "ALTER TABLE collection_alembic_version "
+            "ALTER COLUMN version_num TYPE VARCHAR(128)"
+        )
+    )
+PY
+}
+
 wait_for_postgres
 run_migration "auth-service"
 echo "Seeding authentication roles, permissions, and administrator"
 cd "$ROOT/auth-service"
 python -m app.seed
 
-run_migration "collection-service"
-echo "Seeding collection reference data"
+echo "Applying collection-service migrations through the compatible revision"
 cd "$ROOT/collection-service"
+alembic upgrade 0004_movement_request_fk
+prepare_collection_revision_table
+alembic upgrade head
+echo "Seeding collection reference data"
 python -m app.seed
 
 run_migration "conservation-service"

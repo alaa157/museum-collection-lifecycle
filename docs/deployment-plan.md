@@ -276,6 +276,9 @@ this Docker environment by cross-container PostgreSQL connectivity
 - Added a one-shot Compose `migrations` service that runs after PostgreSQL and
   RabbitMQ healthchecks and before application services.
 - Corrected initialization order so auth migrations run before auth seeding.
+- Added a compatibility step for the collection migration table: the existing
+  Alembic table uses `VARCHAR(32)`, but revision `0005_conservation_previous_status`
+  is longer; the migration job widens it before applying that revision.
 - Added deployment environment validation that rejects missing values,
   example credentials, and short JWT secrets.
 - Added `AUTH_COOKIE_SECURE` to the deployment configuration contract.

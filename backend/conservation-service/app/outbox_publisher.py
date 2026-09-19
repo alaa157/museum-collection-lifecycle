@@ -8,7 +8,7 @@ import pika
 from sqlalchemy import select
 
 from app.db import SessionLocal, settings
-from app.models.outbox import OutboxEvent
+from app.models import OutboxEvent
 
 
 logger = logging.getLogger(__name__)

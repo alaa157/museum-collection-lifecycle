@@ -6,7 +6,10 @@ from sqlalchemy import Boolean, DateTime, Integer, String, Text, create_engine, 
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, sessionmaker
 
 SERVICE_DIR = Path(__file__).resolve().parents[1]
-ROOT_DIR = Path(__file__).resolve().parents[3]
+ROOT_DIR = next(
+    (parent for parent in Path(__file__).resolve().parents if (parent / ".env").exists()),
+    Path("/app"),
+)
 
 
 class Settings(BaseSettings):

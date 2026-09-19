@@ -75,6 +75,8 @@ checks described below.
 
 ## Phase 1 — Reproducible backend images
 
+Status: complete on commit `9e6197c`
+
 ### Files to change
 
 - `backend/*/Dockerfile`
@@ -115,6 +117,8 @@ checks described below.
 
 ## Phase 2 — Reproducible Next.js frontend image
 
+Status: complete on commit `9e6197c`; validation closed on the Phase 2 follow-up commit
+
 ### Files to change
 
 - `frontend/Dockerfile`
@@ -148,6 +152,17 @@ checks described below.
 - The frontend image is self-contained and starts with only deployment
   environment variables.
 - No development server or source tree is required at runtime.
+
+### Phase 2 validation record
+
+- A clean Docker build succeeded without host `node_modules` or `.next`.
+- `pnpm build` completed successfully, including linting and type checking.
+- The runtime image contains only the standalone Next.js server and static
+  assets, runs as the non-root `app` user, and has a healthcheck.
+- The `/` and `/login` routes returned successfully from a running container
+  with `API_GATEWAY_URL` supplied at runtime.
+- The server is explicitly configured to listen on `0.0.0.0:3000` inside the
+  container.
 
 ## Phase 3 — Compose network and dependency topology
 

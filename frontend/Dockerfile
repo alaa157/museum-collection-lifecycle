@@ -10,7 +10,9 @@ RUN pnpm install --frozen-lockfile
 
 FROM node:22-alpine AS builder
 
-ENV NODE_ENV=production
+ENV NODE_ENV=production \
+    HOSTNAME=0.0.0.0 \
+    PORT=3000
 
 WORKDIR /app
 

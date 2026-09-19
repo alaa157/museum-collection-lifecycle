@@ -8,6 +8,8 @@ export const metadata: Metadata = {
     "Professional museum collection management platform"
 };
 
+export const dynamic = "force-dynamic";
+
 export default function RootLayout({
   children
 }: Readonly<{

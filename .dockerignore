@@ -1,0 +1,12 @@
+.git
+.gitignore
+.env
+.env.*
+!.env.example
+node_modules/.cache
+.next/cache
+coverage
+.pytest_cache
+__pycache__
+*.pyc
+*.log

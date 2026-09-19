@@ -1,0 +1,46 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  - job_name: museum-api-gateway
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - 127.0.0.1:8000
+
+  - job_name: museum-auth-health
+    metrics_path: /health
+    static_configs:
+      - targets:
+          - 127.0.0.1:8001
+
+  - job_name: museum-collection-health
+    metrics_path: /health
+    static_configs:
+      - targets:
+          - 127.0.0.1:8002
+
+  - job_name: museum-conservation-health
+    metrics_path: /health
+    static_configs:
+      - targets:
+          - 127.0.0.1:8003
+
+  - job_name: museum-loan-health
+    metrics_path: /health
+    static_configs:
+      - targets:
+          - 127.0.0.1:8004
+
+  - job_name: museum-notification-health
+    metrics_path: /health
+    static_configs:
+      - targets:
+          - 127.0.0.1:8005
+
+  - job_name: museum-audit-health
+    metrics_path: /health
+    static_configs:
+      - targets:
+          - 127.0.0.1:8006

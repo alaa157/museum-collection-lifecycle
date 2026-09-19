@@ -1,0 +1,174 @@
+services:
+  auth-service:
+    build:
+      context: ./backend/auth-service
+      dockerfile: Dockerfile
+    network_mode: host
+    environment:
+      DATABASE_HOST: ${DATABASE_HOST}
+      DATABASE_PORT: ${DATABASE_PORT}
+      DATABASE_NAME: ${DATABASE_NAME}
+      DATABASE_USER: ${DATABASE_USER}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ALGORITHM: ${JWT_ALGORITHM}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES}
+      REFRESH_TOKEN_EXPIRE_DAYS: ${REFRESH_TOKEN_EXPIRE_DAYS}
+      AUTH_SERVICE_HOST: ${AUTH_SERVICE_HOST}
+      AUTH_SERVICE_PORT: ${AUTH_SERVICE_PORT}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
+      SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL}
+      SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD}
+      SEED_ADMIN_FIRST_NAME: ${SEED_ADMIN_FIRST_NAME}
+      SEED_ADMIN_LAST_NAME: ${SEED_ADMIN_LAST_NAME}
+    restart: unless-stopped
+
+  collection-service:
+    build:
+      context: ./backend/collection-service
+      dockerfile: Dockerfile
+    network_mode: host
+    environment:
+      DATABASE_HOST: ${DATABASE_HOST}
+      DATABASE_PORT: ${DATABASE_PORT}
+      DATABASE_NAME: ${DATABASE_NAME}
+      DATABASE_USER: ${DATABASE_USER}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ALGORITHM: ${JWT_ALGORITHM}
+      COLLECTION_SERVICE_HOST: ${COLLECTION_SERVICE_HOST}
+      COLLECTION_SERVICE_PORT: ${COLLECTION_SERVICE_PORT}
+      REDIS_HOST: ${REDIS_HOST}
+      REDIS_PORT: ${REDIS_PORT}
+      RABBITMQ_HOST: ${RABBITMQ_HOST}
+      RABBITMQ_PORT: ${RABBITMQ_PORT}
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      FILE_STORAGE_PATH: ${FILE_STORAGE_PATH}
+      PUBLIC_FRONTEND_URL: ${PUBLIC_FRONTEND_URL}
+    volumes:
+      - ./storage:/app/storage
+    restart: unless-stopped
+
+  conservation-service:
+    build:
+      context: ./backend/conservation-service
+      dockerfile: Dockerfile
+    network_mode: host
+    environment:
+      DATABASE_HOST: ${DATABASE_HOST}
+      DATABASE_PORT: ${DATABASE_PORT}
+      DATABASE_NAME: ${DATABASE_NAME}
+      DATABASE_USER: ${DATABASE_USER}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ALGORITHM: ${JWT_ALGORITHM}
+      RABBITMQ_HOST: ${RABBITMQ_HOST}
+      RABBITMQ_PORT: ${RABBITMQ_PORT}
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      CONSERVATION_SERVICE_HOST: ${CONSERVATION_SERVICE_HOST}
+      CONSERVATION_SERVICE_PORT: ${CONSERVATION_SERVICE_PORT}
+    restart: unless-stopped
+
+  loan-service:
+    build:
+      context: ./backend/loan-service
+      dockerfile: Dockerfile
+    network_mode: host
+    environment:
+      DATABASE_HOST: ${DATABASE_HOST}
+      DATABASE_PORT: ${DATABASE_PORT}
+      DATABASE_NAME: ${DATABASE_NAME}
+      DATABASE_USER: ${DATABASE_USER}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ALGORITHM: ${JWT_ALGORITHM}
+      RABBITMQ_HOST: ${RABBITMQ_HOST}
+      RABBITMQ_PORT: ${RABBITMQ_PORT}
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      LOAN_SERVICE_HOST: ${LOAN_SERVICE_HOST}
+      LOAN_SERVICE_PORT: ${LOAN_SERVICE_PORT}
+    restart: unless-stopped
+
+  notification-service:
+    build:
+      context: ./backend/notification-service
+      dockerfile: Dockerfile
+    network_mode: host
+    environment:
+      DATABASE_HOST: ${DATABASE_HOST}
+      DATABASE_PORT: ${DATABASE_PORT}
+      DATABASE_NAME: ${DATABASE_NAME}
+      DATABASE_USER: ${DATABASE_USER}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ALGORITHM: ${JWT_ALGORITHM}
+      RABBITMQ_HOST: ${RABBITMQ_HOST}
+      RABBITMQ_PORT: ${RABBITMQ_PORT}
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      NOTIFICATION_SERVICE_HOST: ${NOTIFICATION_SERVICE_HOST}
+      NOTIFICATION_SERVICE_PORT: ${NOTIFICATION_SERVICE_PORT}
+    restart: unless-stopped
+
+  audit-service:
+    build:
+      context: ./backend/audit-service
+      dockerfile: Dockerfile
+    network_mode: host
+    environment:
+      DATABASE_HOST: ${DATABASE_HOST}
+      DATABASE_PORT: ${DATABASE_PORT}
+      DATABASE_NAME: ${DATABASE_NAME}
+      DATABASE_USER: ${DATABASE_USER}
+      DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_ALGORITHM: ${JWT_ALGORITHM}
+      RABBITMQ_HOST: ${RABBITMQ_HOST}
+      RABBITMQ_PORT: ${RABBITMQ_PORT}
+      RABBITMQ_USER: ${RABBITMQ_USER}
+      RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
+      AUDIT_SERVICE_HOST: ${AUDIT_SERVICE_HOST}
+      AUDIT_SERVICE_PORT: ${AUDIT_SERVICE_PORT}
+    restart: unless-stopped
+
+  api-gateway:
+    build:
+      context: ./backend/api-gateway
+      dockerfile: Dockerfile
+    network_mode: host
+    environment:
+      API_GATEWAY_HOST: ${API_GATEWAY_HOST}
+      API_GATEWAY_PORT: ${API_GATEWAY_PORT}
+      AUTH_SERVICE_URL: ${AUTH_SERVICE_URL}
+      COLLECTION_SERVICE_URL: ${COLLECTION_SERVICE_URL}
+      CONSERVATION_SERVICE_URL: ${CONSERVATION_SERVICE_URL}
+      LOAN_SERVICE_URL: ${LOAN_SERVICE_URL}
+      NOTIFICATION_SERVICE_URL: ${NOTIFICATION_SERVICE_URL}
+      AUDIT_SERVICE_URL: ${AUDIT_SERVICE_URL}
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
+      REQUEST_TIMEOUT_SECONDS: ${REQUEST_TIMEOUT_SECONDS}
+    depends_on:
+      - auth-service
+      - collection-service
+      - conservation-service
+      - loan-service
+      - notification-service
+      - audit-service
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    network_mode: host
+    environment:
+      NODE_ENV: production
+      API_GATEWAY_URL: ${API_GATEWAY_URL}
+      NEXT_PUBLIC_APP_NAME: ${NEXT_PUBLIC_APP_NAME}
+      NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL}
+    depends_on:
+      - api-gateway
+    restart: unless-stopped

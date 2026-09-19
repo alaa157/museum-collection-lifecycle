@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=75", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "museum-auth-service"
+version = "1.0.0"
+description = "Authentication and authorization service for Museum Collection Lifecycle Platform"
+requires-python = ">=3.12"
+
+[tool.setuptools]
+packages = ["app", "app.core", "app.db", "app.models", "app.schemas", "app.repositories", "app.security", "app.api"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

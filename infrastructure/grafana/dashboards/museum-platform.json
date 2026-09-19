@@ -1,0 +1,92 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "editable": true,
+  "graphTooltip": 1,
+  "panels": [
+    {
+      "type": "stat",
+      "title": "HTTP Requests",
+      "gridPos": {
+        "h": 5,
+        "w": 8,
+        "x": 0,
+        "y": 0
+      },
+      "targets": [
+        {
+          "expr": "sum(http_requests_total)",
+          "legendFormat": "Requests"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "5xx Responses",
+      "gridPos": {
+        "h": 5,
+        "w": 8,
+        "x": 8,
+        "y": 0
+      },
+      "targets": [
+        {
+          "expr": "sum(http_requests_total{status=~\"5..\"})",
+          "legendFormat": "Errors"
+        }
+      ]
+    },
+    {
+      "type": "stat",
+      "title": "Gateway Process",
+      "gridPos": {
+        "h": 5,
+        "w": 8,
+        "x": 16,
+        "y": 0
+      },
+      "targets": [
+        {
+          "expr": "up{job=\"museum-api-gateway\"}",
+          "legendFormat": "Gateway"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "HTTP Request Rate",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 5
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total[5m]))",
+          "legendFormat": "Requests/sec"
+        }
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "HTTP Request Duration",
+      "gridPos": {
+        "h": 8,
+        "w": 24,
+        "x": 0,
+        "y": 13
+      },
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le))",
+          "legendFormat": "p95"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 39,
+  "title": "Museum Collection Lifecycle Platform",
+  "version": 1
+}

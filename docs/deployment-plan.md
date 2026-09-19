@@ -166,6 +166,8 @@ Status: complete on commit `9e6197c`; validation closed on the Phase 2 follow-up
 
 ## Phase 3 — Compose network and dependency topology
 
+Status: implementation complete; migration/seed readiness is deferred to Phase 4
+
 ### Files to change
 
 - `docker-compose.yml`
@@ -208,6 +210,23 @@ Status: complete on commit `9e6197c`; validation closed on the Phase 2 follow-up
 - The complete stack starts on a fresh VM using one documented Compose command
   plus the migration job.
 - No container uses loopback to reach another container.
+
+### Phase 3 validation record
+
+- Replaced host networking with the `museum-internal` bridge network.
+- Added Compose-managed PostgreSQL, Redis, and RabbitMQ services with named
+  volumes and dependency healthchecks.
+- Added health-gated `depends_on` relationships for application services.
+- Switched application-to-application URLs to Compose service DNS names.
+- Kept only the frontend and gateway ports published temporarily for staging;
+  the reverse proxy will become the sole public entry point in Phase 5.
+- Added a named persistent upload volume for the collection service.
+- `docker compose --env-file .env.example config --quiet` passes.
+- All application images remain buildable with the Phase 1/2 Dockerfiles.
+
+The full-stack startup and readiness smoke test is intentionally deferred until
+Phase 4 provides migrations and idempotent bootstrap. Starting services against
+an empty database before that phase would produce a misleading result.
 
 ## Phase 4 — Configuration, secrets, migrations, and seed data
 

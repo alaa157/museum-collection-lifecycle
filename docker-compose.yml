@@ -1,12 +1,61 @@
 services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: ${DATABASE_NAME}
+      POSTGRES_USER: ${DATABASE_USER}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    networks:
+      - museum-internal
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - redis-data:/data
+    networks:
+      - museum-internal
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:4-management-alpine
+    environment:
+      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    networks:
+      - museum-internal
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+      start_period: 20s
+    restart: unless-stopped
+
   auth-service:
     build:
       context: ./backend/auth-service
       dockerfile: Dockerfile
-    network_mode: host
     environment:
-      DATABASE_HOST: ${DATABASE_HOST}
-      DATABASE_PORT: ${DATABASE_PORT}
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
       DATABASE_NAME: ${DATABASE_NAME}
       DATABASE_USER: ${DATABASE_USER}
       DATABASE_PASSWORD: ${DATABASE_PASSWORD}
@@ -14,161 +63,237 @@ services:
       JWT_ALGORITHM: ${JWT_ALGORITHM}
       ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES}
       REFRESH_TOKEN_EXPIRE_DAYS: ${REFRESH_TOKEN_EXPIRE_DAYS}
-      AUTH_SERVICE_HOST: ${AUTH_SERVICE_HOST}
-      AUTH_SERVICE_PORT: ${AUTH_SERVICE_PORT}
+      AUTH_SERVICE_HOST: 0.0.0.0
+      AUTH_SERVICE_PORT: 8001
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
       SEED_ADMIN_EMAIL: ${SEED_ADMIN_EMAIL}
       SEED_ADMIN_PASSWORD: ${SEED_ADMIN_PASSWORD}
       SEED_ADMIN_FIRST_NAME: ${SEED_ADMIN_FIRST_NAME}
       SEED_ADMIN_LAST_NAME: ${SEED_ADMIN_LAST_NAME}
+    networks:
+      - museum-internal
+    depends_on:
+      postgres:
+        condition: service_healthy
+    expose:
+      - "8001"
     restart: unless-stopped
 
   collection-service:
     build:
       context: ./backend/collection-service
       dockerfile: Dockerfile
-    network_mode: host
     environment:
-      DATABASE_HOST: ${DATABASE_HOST}
-      DATABASE_PORT: ${DATABASE_PORT}
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
       DATABASE_NAME: ${DATABASE_NAME}
       DATABASE_USER: ${DATABASE_USER}
       DATABASE_PASSWORD: ${DATABASE_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
       JWT_ALGORITHM: ${JWT_ALGORITHM}
-      COLLECTION_SERVICE_HOST: ${COLLECTION_SERVICE_HOST}
-      COLLECTION_SERVICE_PORT: ${COLLECTION_SERVICE_PORT}
-      REDIS_HOST: ${REDIS_HOST}
-      REDIS_PORT: ${REDIS_PORT}
-      RABBITMQ_HOST: ${RABBITMQ_HOST}
-      RABBITMQ_PORT: ${RABBITMQ_PORT}
+      COLLECTION_SERVICE_HOST: 0.0.0.0
+      COLLECTION_SERVICE_PORT: 8002
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
       RABBITMQ_USER: ${RABBITMQ_USER}
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
-      FILE_STORAGE_PATH: ${FILE_STORAGE_PATH}
+      FILE_STORAGE_PATH: /app/storage
       PUBLIC_FRONTEND_URL: ${PUBLIC_FRONTEND_URL}
     volumes:
-      - ./storage:/app/storage
+      - collection-storage:/app/storage
+    networks:
+      - museum-internal
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    expose:
+      - "8002"
     restart: unless-stopped
 
   conservation-service:
     build:
       context: ./backend/conservation-service
       dockerfile: Dockerfile
-    network_mode: host
     environment:
-      DATABASE_HOST: ${DATABASE_HOST}
-      DATABASE_PORT: ${DATABASE_PORT}
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
       DATABASE_NAME: ${DATABASE_NAME}
       DATABASE_USER: ${DATABASE_USER}
       DATABASE_PASSWORD: ${DATABASE_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
       JWT_ALGORITHM: ${JWT_ALGORITHM}
-      RABBITMQ_HOST: ${RABBITMQ_HOST}
-      RABBITMQ_PORT: ${RABBITMQ_PORT}
+      COLLECTION_SERVICE_URL: http://collection-service:8002
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
       RABBITMQ_USER: ${RABBITMQ_USER}
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
-      CONSERVATION_SERVICE_HOST: ${CONSERVATION_SERVICE_HOST}
-      CONSERVATION_SERVICE_PORT: ${CONSERVATION_SERVICE_PORT}
+      CONSERVATION_SERVICE_HOST: 0.0.0.0
+      CONSERVATION_SERVICE_PORT: 8003
+    networks:
+      - museum-internal
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    expose:
+      - "8003"
     restart: unless-stopped
 
   loan-service:
     build:
       context: ./backend/loan-service
       dockerfile: Dockerfile
-    network_mode: host
     environment:
-      DATABASE_HOST: ${DATABASE_HOST}
-      DATABASE_PORT: ${DATABASE_PORT}
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
       DATABASE_NAME: ${DATABASE_NAME}
       DATABASE_USER: ${DATABASE_USER}
       DATABASE_PASSWORD: ${DATABASE_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
       JWT_ALGORITHM: ${JWT_ALGORITHM}
-      RABBITMQ_HOST: ${RABBITMQ_HOST}
-      RABBITMQ_PORT: ${RABBITMQ_PORT}
+      COLLECTION_SERVICE_URL: http://collection-service:8002
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
       RABBITMQ_USER: ${RABBITMQ_USER}
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
-      LOAN_SERVICE_HOST: ${LOAN_SERVICE_HOST}
-      LOAN_SERVICE_PORT: ${LOAN_SERVICE_PORT}
+      LOAN_SERVICE_HOST: 0.0.0.0
+      LOAN_SERVICE_PORT: 8004
+    networks:
+      - museum-internal
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    expose:
+      - "8004"
     restart: unless-stopped
 
   notification-service:
     build:
       context: ./backend/notification-service
       dockerfile: Dockerfile
-    network_mode: host
     environment:
-      DATABASE_HOST: ${DATABASE_HOST}
-      DATABASE_PORT: ${DATABASE_PORT}
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
       DATABASE_NAME: ${DATABASE_NAME}
       DATABASE_USER: ${DATABASE_USER}
       DATABASE_PASSWORD: ${DATABASE_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
       JWT_ALGORITHM: ${JWT_ALGORITHM}
-      RABBITMQ_HOST: ${RABBITMQ_HOST}
-      RABBITMQ_PORT: ${RABBITMQ_PORT}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
       RABBITMQ_USER: ${RABBITMQ_USER}
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
-      NOTIFICATION_SERVICE_HOST: ${NOTIFICATION_SERVICE_HOST}
-      NOTIFICATION_SERVICE_PORT: ${NOTIFICATION_SERVICE_PORT}
+      NOTIFICATION_SERVICE_HOST: 0.0.0.0
+      NOTIFICATION_SERVICE_PORT: 8005
+    networks:
+      - museum-internal
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    expose:
+      - "8005"
     restart: unless-stopped
 
   audit-service:
     build:
       context: ./backend/audit-service
       dockerfile: Dockerfile
-    network_mode: host
     environment:
-      DATABASE_HOST: ${DATABASE_HOST}
-      DATABASE_PORT: ${DATABASE_PORT}
+      DATABASE_HOST: postgres
+      DATABASE_PORT: 5432
       DATABASE_NAME: ${DATABASE_NAME}
       DATABASE_USER: ${DATABASE_USER}
       DATABASE_PASSWORD: ${DATABASE_PASSWORD}
       JWT_SECRET: ${JWT_SECRET}
       JWT_ALGORITHM: ${JWT_ALGORITHM}
-      RABBITMQ_HOST: ${RABBITMQ_HOST}
-      RABBITMQ_PORT: ${RABBITMQ_PORT}
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
       RABBITMQ_USER: ${RABBITMQ_USER}
       RABBITMQ_PASSWORD: ${RABBITMQ_PASSWORD}
-      AUDIT_SERVICE_HOST: ${AUDIT_SERVICE_HOST}
-      AUDIT_SERVICE_PORT: ${AUDIT_SERVICE_PORT}
+      AUDIT_SERVICE_HOST: 0.0.0.0
+      AUDIT_SERVICE_PORT: 8006
+    networks:
+      - museum-internal
+    depends_on:
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+    expose:
+      - "8006"
     restart: unless-stopped
 
   api-gateway:
     build:
       context: ./backend/api-gateway
       dockerfile: Dockerfile
-    network_mode: host
     environment:
-      API_GATEWAY_HOST: ${API_GATEWAY_HOST}
-      API_GATEWAY_PORT: ${API_GATEWAY_PORT}
-      AUTH_SERVICE_URL: ${AUTH_SERVICE_URL}
-      COLLECTION_SERVICE_URL: ${COLLECTION_SERVICE_URL}
-      CONSERVATION_SERVICE_URL: ${CONSERVATION_SERVICE_URL}
-      LOAN_SERVICE_URL: ${LOAN_SERVICE_URL}
-      NOTIFICATION_SERVICE_URL: ${NOTIFICATION_SERVICE_URL}
-      AUDIT_SERVICE_URL: ${AUDIT_SERVICE_URL}
+      API_GATEWAY_HOST: 0.0.0.0
+      API_GATEWAY_PORT: 8000
+      AUTH_SERVICE_URL: http://auth-service:8001
+      COLLECTION_SERVICE_URL: http://collection-service:8002
+      CONSERVATION_SERVICE_URL: http://conservation-service:8003
+      LOAN_SERVICE_URL: http://loan-service:8004
+      NOTIFICATION_SERVICE_URL: http://notification-service:8005
+      AUDIT_SERVICE_URL: http://audit-service:8006
       CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS}
       REQUEST_TIMEOUT_SECONDS: ${REQUEST_TIMEOUT_SECONDS}
+    networks:
+      - museum-internal
     depends_on:
-      - auth-service
-      - collection-service
-      - conservation-service
-      - loan-service
-      - notification-service
-      - audit-service
+      auth-service:
+        condition: service_healthy
+      collection-service:
+        condition: service_healthy
+      conservation-service:
+        condition: service_healthy
+      loan-service:
+        condition: service_healthy
+      notification-service:
+        condition: service_healthy
+      audit-service:
+        condition: service_healthy
+    ports:
+      - "${API_GATEWAY_PORT}:8000"
     restart: unless-stopped
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
-    network_mode: host
+      args:
+        API_GATEWAY_URL: http://api-gateway:8000
     environment:
       NODE_ENV: production
-      API_GATEWAY_URL: ${API_GATEWAY_URL}
+      API_GATEWAY_URL: http://api-gateway:8000
       NEXT_PUBLIC_APP_NAME: ${NEXT_PUBLIC_APP_NAME}
       NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL}
+    networks:
+      - museum-internal
     depends_on:
-      - api-gateway
+      api-gateway:
+        condition: service_healthy
+    ports:
+      - "${FRONTEND_PORT}:3000"
     restart: unless-stopped
+
+networks:
+  museum-internal:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  redis-data:
+  rabbitmq-data:
+  collection-storage:

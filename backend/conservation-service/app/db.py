@@ -16,6 +16,7 @@ class Settings(BaseSettings):
 
     jwt_secret: str
     jwt_algorithm: str = "HS256"
+    collection_service_url: str = "http://127.0.0.1:8002"
 
     rabbitmq_host: str = "127.0.0.1"
     rabbitmq_port: int = 5672

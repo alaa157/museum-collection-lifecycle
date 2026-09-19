@@ -75,6 +75,8 @@ checks described below.
 
 ## Phase 1 — Reproducible backend images
 
+Status: complete on commit `9e6197c`
+
 ### Files to change
 
 - `backend/*/Dockerfile`
@@ -115,6 +117,8 @@ checks described below.
 
 ## Phase 2 — Reproducible Next.js frontend image
 
+Status: complete on commit `9e6197c`; validation closed on the Phase 2 follow-up commit
+
 ### Files to change
 
 - `frontend/Dockerfile`
@@ -149,7 +153,20 @@ checks described below.
   environment variables.
 - No development server or source tree is required at runtime.
 
+### Phase 2 validation record
+
+- A clean Docker build succeeded without host `node_modules` or `.next`.
+- `pnpm build` completed successfully, including linting and type checking.
+- The runtime image contains only the standalone Next.js server and static
+  assets, runs as the non-root `app` user, and has a healthcheck.
+- The `/` and `/login` routes returned successfully from a running container
+  with `API_GATEWAY_URL` supplied at runtime.
+- The server is explicitly configured to listen on `0.0.0.0:3000` inside the
+  container.
+
 ## Phase 3 — Compose network and dependency topology
+
+Status: implementation complete; migration/seed readiness is deferred to Phase 4
 
 ### Files to change
 
@@ -194,7 +211,27 @@ checks described below.
   plus the migration job.
 - No container uses loopback to reach another container.
 
+### Phase 3 validation record
+
+- Replaced host networking with the `museum-internal` bridge network.
+- Added Compose-managed PostgreSQL, Redis, and RabbitMQ services with named
+  volumes and dependency healthchecks.
+- Added health-gated `depends_on` relationships for application services.
+- Switched application-to-application URLs to Compose service DNS names.
+- Kept only the frontend and gateway ports published temporarily for staging;
+  the reverse proxy will become the sole public entry point in Phase 5.
+- Added a named persistent upload volume for the collection service.
+- `docker compose --env-file .env.example config --quiet` passes.
+- All application images remain buildable with the Phase 1/2 Dockerfiles.
+
+The full-stack startup and readiness smoke test is intentionally deferred until
+Phase 4 provides migrations and idempotent bootstrap. Starting services against
+an empty database before that phase would produce a misleading result.
+
 ## Phase 4 — Configuration, secrets, migrations, and seed data
+
+Status: implementation complete; fresh-database integration run is blocked in
+this Docker environment by cross-container PostgreSQL connectivity
 
 ### Files to change
 
@@ -231,6 +268,31 @@ checks described below.
 
 - Configuration is explicit, validated, and environment-specific.
 - There is a documented, repeatable first-install and upgrade procedure.
+
+### Phase 4 validation record
+
+- Added a dedicated migration image containing all six Alembic environments
+  and the two idempotent seed routines.
+- Added a one-shot Compose `migrations` service that runs after PostgreSQL and
+  RabbitMQ healthchecks and before application services.
+- Corrected initialization order so auth migrations run before auth seeding.
+- Added a compatibility step for the collection migration table: the existing
+  Alembic table uses `VARCHAR(32)`, but revision `0005_conservation_previous_status`
+  is longer; the migration job widens it before applying that revision.
+- Added deployment environment validation that rejects missing values,
+  example credentials, and short JWT secrets.
+- Added `AUTH_COOKIE_SECURE` to the deployment configuration contract.
+- Quoted the frontend application name in `.env.example` so shell-based
+  environment loading does not split it into commands.
+- The migration image builds successfully and Compose configuration validates.
+- Static script validation passes. The fresh-database migration/seed command
+  was attempted, but this hosted Docker daemon currently blocks TCP traffic
+  between containers on user-defined bridge networks even though the
+  `postgres` name resolves. This is an environment limitation, not a schema
+  or migration failure; it must be rerun on a normal Docker VM.
+- The migration job now performs an explicit TCP readiness retry for up to
+  60 seconds before running Alembic, so a normal VM does not race PostgreSQL
+  startup.
 
 ## Phase 5 — Public edge, TLS, and persistent storage
 

@@ -3,7 +3,10 @@ from pathlib import Path
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 SERVICE_DIR = Path(__file__).resolve().parents[2]
-ROOT_DIR = Path(__file__).resolve().parents[4]
+ROOT_DIR = next(
+    (parent for parent in Path(__file__).resolve().parents if (parent / ".env").exists()),
+    Path("/app"),
+)
 
 
 class Settings(BaseSettings):

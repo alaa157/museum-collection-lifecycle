@@ -5,13 +5,11 @@ from sqlalchemy import text
 
 from app.db import engine
 from app.api import router
-from app.consumer import start_consumer
 from app.outbox_publisher import start_outbox_publisher
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    start_consumer()
     start_outbox_publisher()
 
     yield

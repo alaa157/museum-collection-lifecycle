@@ -1,15 +1,51 @@
 import logging
+import json
 from datetime import datetime, timezone
 from uuid import UUID, uuid4
 
 from sqlalchemy.orm import Session
+import pika
 
-from app.models.outbox import OutboxEvent
+from app.db import settings
+from app.models import OutboxEvent
 
 
 logger = logging.getLogger(__name__)
 
 PRODUCER = "conservation-service"
+
+
+def publish_event(event_type: str, payload: dict) -> None:
+    """Publish a non-transactional alert event for legacy API paths."""
+    connection = pika.BlockingConnection(
+        pika.ConnectionParameters(
+            host=settings.rabbitmq_host,
+            port=settings.rabbitmq_port,
+            credentials=pika.PlainCredentials(
+                settings.rabbitmq_user,
+                settings.rabbitmq_password,
+            ),
+            heartbeat=30,
+        )
+    )
+    try:
+        channel = connection.channel()
+        channel.exchange_declare(
+            exchange="museum.events",
+            exchange_type="topic",
+            durable=True,
+        )
+        channel.basic_publish(
+            exchange="museum.events",
+            routing_key=event_type,
+            body=json.dumps(payload, default=str),
+            properties=pika.BasicProperties(
+                content_type="application/json",
+                delivery_mode=2,
+            ),
+        )
+    finally:
+        connection.close()
 
 
 def enqueue_event(

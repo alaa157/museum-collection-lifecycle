@@ -39,6 +39,12 @@ If the job fails, inspect its logs, correct the environment or database issue,
 and rerun it; application services must not be started against a failed schema
 upgrade.
 
+The migration job includes a 60-second PostgreSQL TCP readiness retry. A
+Docker host must permit container-to-container traffic on the
+`museum-internal` bridge network; if DNS resolves but TCP connections time
+out, inspect the host's Docker bridge/firewall policy rather than adding a
+second database inside the migration image.
+
 ## Upgrades
 
 Build or pull the new image set, validate the deployment environment, run the

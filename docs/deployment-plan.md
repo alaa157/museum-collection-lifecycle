@@ -283,9 +283,13 @@ this Docker environment by cross-container PostgreSQL connectivity
   environment loading does not split it into commands.
 - The migration image builds successfully and Compose configuration validates.
 - Static script validation passes. The fresh-database migration/seed command
-  was attempted, but the migration container could resolve `postgres` and
-  could not establish a TCP connection to it in this Docker environment.
-  This must be rerun on the target VM before Phase 4 is accepted.
+  was attempted, but this hosted Docker daemon currently blocks TCP traffic
+  between containers on user-defined bridge networks even though the
+  `postgres` name resolves. This is an environment limitation, not a schema
+  or migration failure; it must be rerun on a normal Docker VM.
+- The migration job now performs an explicit TCP readiness retry for up to
+  60 seconds before running Alembic, so a normal VM does not race PostgreSQL
+  startup.
 
 ## Phase 5 — Public edge, TLS, and persistent storage
 

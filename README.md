@@ -78,6 +78,30 @@ flowchart LR
 
 The API gateway is the public entry point. Domain services publish events through RabbitMQ; consumers in conservation, loans, notifications, and audit react asynchronously. Collection search and dashboard responses use Redis caching, and collection changes are published through an outbox publisher.
 
+## Screenshots
+
+The screenshots below show the responsive web application running in the local Docker Compose environment.
+
+### Sign-in
+
+![Museum Collection Lifecycle sign-in screen](screenshot/login.png)
+
+![Sign-in form with screenshot credentials filled](screenshot/login-filled.png)
+
+### Collection workflows
+
+![Collection search and records](screenshot/collection.png)
+
+![New collection item form](screenshot/collection-new.png)
+
+![Acquisition record form](screenshot/acquisitions.png)
+
+![Movement requests](screenshot/movements.png)
+
+### Conservation
+
+![Conservation workspace](screenshot/conservation.png)
+
 ## Technology stack
 
 | Layer | Technologies |
